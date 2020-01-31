@@ -11,11 +11,17 @@ jobs:
       - restore_cache:
           key: jars-{{ checksum "build.gradle" }}-{{ checksum  "app/build.gradle" }}
       - run:
-          name: Chmod permissions #if permission for Gradlew Dependencies fail, use this.
-          command: sudo chmod +x ./gradlew
+         name: Chmod permissions #if permission for Gradlew Dependencies fail, use this.
+         command: sudo chmod +x ./gradlew
       - run:
           name: Download Dependencies
           command: ./gradlew androidDependencies
+      - run:
+          name: Download appcenter
+          command: sudo npm install appcenter-cli -g
+      - run:
+          name: Login
+          command: appcenter login --token YOUR_TOKEN_HERE
       - save_cache:
           paths:
             - ~/.gradle
@@ -28,4 +34,10 @@ jobs:
           destination: reports
       - store_test_results: # for display in Test Summary: https://circleci.com/docs/2.0/collect-test-data/
           path: app/build/test-results
+      - run:
+          name: Build debug apk
+          command: ./gradlew :app:assembleDebug
+      - run:
+          name: Deliver to appcenter
+          command: appcenter distribute release --debug --app USER/APP --file app/build/outputs/apk/debug/app-debug.apk --group "App Testers"
       # See https://circleci.com/docs/2.0/deployment-integrations/ for deploy examples
